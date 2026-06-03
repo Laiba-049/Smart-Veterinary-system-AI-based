@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/Laravel-12-red?style=flat-square&logo=laravel" alt="Laravel 12"/>
   <img src="https://img.shields.io/badge/PHP-8.2+-blue?style=flat-square&logo=php" alt="PHP 8.2"/>
   <img src="https://img.shields.io/badge/AI-Groq%20%7C%20LLaMA%203.1-green?style=flat-square" alt="AI"/>
-  <img src="https://img.shields.io/badge/DB-MySQL-orange?style=flat-square&logo=mysql" alt="MySQL"/>
+  <img src="https://img.shields.io/badge/DB-SQLite%20%7C%20MySQL-orange?style=flat-square" alt="DB"/>
 </p>
 
 ---
@@ -32,8 +32,8 @@
 
 - **Backend:** Laravel 12, PHP 8.2+
 - **Frontend:** Blade templates, Bootstrap 5, Vite
-- **Database:** MySQL
-- **AI:** [Groq API](https://console.groq.com) (LLaMA 3.1-8b-instant)
+- **Database:** SQLite (default) or MySQL
+- **AI:** [Groq API](https://console.groq.com) — LLaMA 3.1-8b-instant
 - **PDF:** barryvdh/laravel-dompdf
 - **Auth:** Multi-guard (Users + Doctors)
 
@@ -41,17 +41,19 @@
 
 ## ⚙️ Requirements
 
-Before you begin, make sure you have:
+Install these before you start:
 
-- **PHP** >= 8.2 ([download](https://www.php.net/downloads))
-- **Composer** ([download](https://getcomposer.org))
-- **Node.js** >= 18 + npm ([download](https://nodejs.org))
-- **MySQL** >= 8.0 (or XAMPP / WAMP / Laragon)
-- A **Groq API key** — free at [console.groq.com](https://console.groq.com/keys)
+| Tool | Version | Download |
+|---|---|---|
+| PHP | >= 8.2 | [php.net/downloads](https://www.php.net/downloads) |
+| Composer | Latest | [getcomposer.org](https://getcomposer.org) |
+| Node.js + npm | >= 18 | [nodejs.org](https://nodejs.org) |
+
+> ✅ No MySQL or XAMPP needed — this project uses **SQLite by default** (zero setup database).
 
 ---
 
-## 🚀 Setup & Run
+## 🚀 Setup & Run (Step by Step)
 
 ### 1. Clone the repository
 
@@ -62,8 +64,10 @@ cd Smart-Veterinary-AI
 
 ### 2. Install PHP dependencies
 
+> ⚠️ Use `composer update` (not install) — this ensures packages match your PHP version.
+
 ```bash
-composer install
+composer update
 ```
 
 ### 3. Install Node dependencies
@@ -72,44 +76,29 @@ composer install
 npm install
 ```
 
-### 4. Set up environment file
+### 4. Set up your environment file
 
 ```bash
 cp .env.example .env
 php artisan key:generate
 ```
 
-### 5. Configure your `.env`
+### 5. Add your API keys to `.env`
 
-Open `.env` and fill in the following:
+Open the `.env` file and fill in:
 
 ```env
-# Database
-DB_DATABASE=vtsystem
-DB_USERNAME=root
-DB_PASSWORD=your_mysql_password
-
-# Groq AI (Required for chat feature)
 GROQ_API_KEY=your_groq_api_key_here
-
-# OpenAI (Optional)
 OPENAI_API_KEY=your_openai_api_key_here
+HUGGINGFACE_API_KEY=your_huggingface_token_here
 ```
 
-> 🔑 Get a free Groq API key at [https://console.groq.com/keys](https://console.groq.com/keys)
+> 🔑 Get a **free** Groq API key at [console.groq.com/keys](https://console.groq.com/keys)
 
-### 6. Create the database
-
-In MySQL, create a database named `vtsystem`:
-
-```sql
-CREATE DATABASE vtsystem;
-```
-
-Or via the command line:
+### 6. Create the SQLite database file
 
 ```bash
-mysql -u root -p -e "CREATE DATABASE vtsystem;"
+php -r "touch('database/database.sqlite');"
 ```
 
 ### 7. Run migrations
@@ -124,28 +113,55 @@ php artisan migrate
 php artisan storage:link
 ```
 
-### 9. Run the development server
+### 9. Start the development server
+
+Open **two terminals** and run one command in each:
 
 ```bash
-# Option A — Run all services at once (recommended)
-composer run dev
-
-# Option B — Run manually in separate terminals
-php artisan serve       # Terminal 1 → http://localhost:8000
-npm run dev             # Terminal 2 → Vite hot reload
+# Terminal 1
+php artisan serve
 ```
 
-Open [http://localhost:8000](http://localhost:8000) in your browser.
+```bash
+# Terminal 2
+npm run dev
+```
+
+### 10. Open in browser
+
+```
+http://localhost:8000
+```
 
 ---
 
 ## 👥 User Roles
 
-| Role | Access | Registration |
+| Role | Registration URL | Access |
 |---|---|---|
-| **User** | Home, chat, appointments, social feed, marketplace | `/signup` |
-| **Doctor** | Doctor dashboard, appointment management | `/doctor/register` |
-| **Seller** | Animal listing, order management | Set `role = seller` in DB |
+| **User** | `/signup` | Home, AI chat, appointments, social feed, marketplace |
+| **Doctor** | `/doctor/register` | Doctor dashboard, appointment management, prescriptions |
+| **Seller** | Set `role = seller` in DB | Animal listing, order management |
+
+---
+
+## 🗄️ Using MySQL instead of SQLite (Optional)
+
+If you have XAMPP, WAMP, or Laragon installed, you can use MySQL instead:
+
+1. Create a database named `vtsystem` in phpMyAdmin
+2. Update your `.env`:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=vtsystem
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+3. Run migrations: `php artisan migrate`
 
 ---
 
@@ -159,7 +175,9 @@ Open [http://localhost:8000](http://localhost:8000) in your browser.
 │   └── Policies/               # Post authorization
 ├── config/
 │   └── openai.php              # OpenAI config (reads from .env)
-├── database/migrations/        # All DB migrations
+├── database/
+│   ├── migrations/             # All DB migrations
+│   └── database.sqlite         # SQLite database file (auto-created)
 ├── public/assets/              # CSS, JS, images
 ├── resources/views/            # Blade templates
 ├── routes/web.php              # All application routes
@@ -168,11 +186,23 @@ Open [http://localhost:8000](http://localhost:8000) in your browser.
 
 ---
 
+## ❓ Common Issues
+
+| Problem | Fix |
+|---|---|
+| `composer install` fails with PHP version error | Use `composer update` instead |
+| `php artisan migrate` fails | Make sure `database/database.sqlite` file exists |
+| AI chat not responding | Check `GROQ_API_KEY` is set correctly in `.env` |
+| Page not loading | Make sure both `php artisan serve` AND `npm run dev` are running |
+| `npm run dev` error | Run `npm install` first |
+
+---
+
 ## 🔐 Security Notes
 
-- **Never commit your `.env` file** — it is listed in `.gitignore`
+- **Never commit your `.env` file** — it is listed in `.gitignore` and will not be pushed to GitHub
 - All API keys must be stored in `.env` only
-- The `.env.example` file contains placeholder keys for reference — **do not add real keys to it**
+- `.env.example` contains empty placeholders only — never put real keys there
 
 ---
 
